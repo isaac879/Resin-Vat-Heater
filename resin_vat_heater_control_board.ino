@@ -12,7 +12,7 @@
  * 
  * Compiled in the Arduino IDE 2.3.2
  *  
- * Last modified: 15/09/2024
+ * Last modified: 16/10/2024
  *
  * Copyright(C) Isaac Chaseau (isaac879)
  *
@@ -106,7 +106,7 @@
 #define MENU_TARGET_ELEMENT_TEMPERATURE 0
 #define MENU_TIMEOUT 1
 
-#define DEBOUNCE_DELAY 2 //Debounce delay in ms (Bounce measured as ~20us)
+#define DEBOUNCE_DELAY 1 //Debounce delay in ms (Bounce measured as ~20us)
 
 #define DISPLAY_ROTATION 1
 
@@ -181,7 +181,7 @@ volatile uint32_t ms_last_debounce_time_button = 0;
 
 const char splash_screen_text_0[] = "Vat Heater";
 const char splash_screen_text_2[] = "isaac879";
-const char splash_screen_text_1[] = "Ver: 1.0.0";
+const char splash_screen_text_1[] = "Ver: 1.0.1";
 
 volatile int64_t msTimeoutStart = 0;
 volatile int64_t msTimeoutEnd = 0;
@@ -326,6 +326,7 @@ void IRAM_ATTR readEncoder(void){ //Interrupt service routine (ISR) for the enco
     // Serial.printf("Encoder ISR\n");
 
     if(currentTime - ms_last_debounce_time_encoder > DEBOUNCE_DELAY){
+        delayMicroseconds(20); //Need to wait for signals to settle. Measured to take <20us
         bool pinA = digitalRead(PIN_ENC1); //Read both encoder pins
         bool pinB = digitalRead(PIN_ENC2);
         
