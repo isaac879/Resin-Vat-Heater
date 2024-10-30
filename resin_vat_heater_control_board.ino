@@ -27,9 +27,9 @@
 #include <Fonts/FreeMonoBold12pt7b.h>
 #include <Fonts/FreeMonoBold18pt7b.h>
 #include <Fonts/FreeMono18pt7b.h>
-// #include "bitmaps/Bitmaps200x200.h"
+
 /*--------------------------------------------------------------------------------------------------------------------------------------------------------*/
-// ESP32-C3 CS(SS)=7,SCL(SCK)=4,SDA(MOSI)=6,BUSY=3,RES(RST)=2,DC=1
+
 //Pin declarations
 #define PIN_THERMISTOR_HEATER 1//HEATER_TEMP
 #define PIN_THERMISTOR_PROBE 0//PROBE_TEMP
@@ -42,10 +42,10 @@
 #define PIN_ENC1 21//ENC1/TXD
 #define PIN_ENC2 20//ENC2/RXD
 
-#define PIN_RES 7//2
-#define PIN_SCK 4 //should be 6?
+#define PIN_RES 7 //Swapped with GPIO2
+#define PIN_SCK 4
 #define PIN_MOSI 6
-#define PIN_CS 2//7
+#define PIN_CS 2 //Swapped with GPIO7
 #define PIN_BUSY 8//BUSY/SDA
 #define PIN_DC 9//DC/SCL/BOOT
 
@@ -57,7 +57,6 @@
 /*--------------------------------------------------------------------------------------------------------------------------------------------------------*/
 
 //Constants
-// #define Serial Serial
 #define BAUD_RATE 115200
 
 #define LEDC_CHANNEL 1
@@ -87,8 +86,8 @@
 
 #define DEFAULT_TARGET_TEMPERATURE_ELEMENT 35.0
 #define MAX_POWER_LIMIT 15.0 //Watts //5 for testing 30 for using.
-// #define ELEMENT_RESISTANCE 2.5 //Measured the value in ohms
-#define ELEMENT_RESISTANCE 1.3 //Measured the value in ohms
+// #define ELEMENT_RESISTANCE 2.5 //Measured the value in Ohms
+#define ELEMENT_RESISTANCE 1.3 //Measured the value in Ohms (2 elements in parallel)
 #define MAX_ELEMENT_TEMPERATURE 60.0
 #define MAX_CURRENT 2.0 //2A
 
@@ -125,13 +124,6 @@
 #define EINK_LINE_7 (7 * LINE_SPACE)
 #define EINK_LINE_8 (8 * LINE_SPACE)
 #define EINK_LINE_9 (9 * LINE_SPACE)
-
-// #define ERROR_CODE_NO_ERRORS 0
-// #define ERROR_CODE_POWER 1
-// #define ERROR_CODE_THERMISTOR_0 2
-// #define ERROR_CODE_THERMISTOR_1 3
-// #define ERROR_CODE_OVERTEMPERATURE 4
-// #define ERROR_CODE_REATCHING_TEMPERATURE 5
 
 //Menu value determines priority (Errors should be highest)
 #define MENU_SCREEN_START 0
@@ -323,7 +315,6 @@ double mapNumber(double x, double in_min, double in_max, double out_min, double 
 
 void IRAM_ATTR readEncoder(void){ //Interrupt service routine (ISR) for the encoder
     uint32_t currentTime = millis(); 
-    // Serial.printf("Encoder ISR\n");
 
     if(currentTime - ms_last_debounce_time_encoder > DEBOUNCE_DELAY){
         delayMicroseconds(20); //Need to wait for signals to settle. Measured to take <20us
@@ -344,7 +335,6 @@ void IRAM_ATTR readEncoder(void){ //Interrupt service routine (ISR) for the enco
 
 void IRAM_ATTR readEncoderButton(void){ //Interrupt service routine (ISR) for the encoder
     uint32_t currentTime = millis(); 
-    // Serial.printf("Button ISR\n");
 
     if(currentTime - ms_last_debounce_time_button > DEBOUNCE_DELAY){
         encoder_button_count++; //Increment the count
@@ -517,7 +507,7 @@ double getTimeoutMinutes(void){ //Return the minutes left until the timeout is r
 
 void heatingElementOn(void){
     double maxPowerDraw = (input_voltage * input_voltage) / ELEMENT_RESISTANCE; //Max possible power given coil resistance and input voltage
-    uint8_t duty = (double)LEDC_MAX_DUTY;// * (maximum_power_limit / maxPowerDraw); //Duty scaled proportional to the power limit
+    uint8_t duty = (double)LEDC_MAX_DUTY;
 
     if(maxPowerDraw > maximum_power_limit){
         duty = (double)LEDC_MAX_DUTY * (maximum_power_limit / maxPowerDraw); //Duty scaled proportional to the power limit
@@ -579,7 +569,6 @@ void IRAM_ATTR updateControlLoop(void){
     if( (temp_steinhart_thermistor_element < getTargetTemperature()) && 
         (temp_steinhart_thermistor_element < MAX_ELEMENT_TEMPERATURE) && 
         (inputVoltageOk() == true) && 
-        // (getTimeoutMinutes() > 0) &&
         (timeout == false) &&
         (elementThermistorConnected() == true)){ 
         heatingElementOn();
@@ -667,8 +656,6 @@ void showDisplayBuffer(void){
         display.setPartialWindow(0, 0, display.width(), display.height()); //Full screen size
     }
     
-    // display.setFullWindow();
-    // display.setPartialWindow(0, 0, display.width(), display.height()); //Full screen size
     while(display.nextPage()){};
     display.firstPage();
     display.fillScreen(GxEPD_WHITE); //Clear the buffer to all white
@@ -692,15 +679,9 @@ void printDegreeSymbol(void){
 
 /*--------------------------------------------------------------------------------------------------------------------------------------------------------*/ 
 
-// display.drawRFrame(PROGRESS_BAR_POSITION_X, PROGRESS_BAR_POSITION_Y, PROGRESS_BAR_LENGTH, PROGRESS_BAR_HEIGHT, 2); //Draw the bar outline
-// display.drawRBox(PROGRESS_BAR_POSITION_X + 2, PROGRESS_BAR_POSITION_Y + 2, barLength, PROGRESS_BAR_HEIGHT - 4, 0);
-// drawPixel(x + i, y + j, color);
-//  writeImage(const uint8_t bitmap[], int16_t x, int16_t y, int16_t w, int16_t h, bool invert = false, bool mirror_y = false, bool pgm = false)
 void printTextCentredX(const char* text, int16_t lineHeight){
-    // int16_t tbx, tby; 
     int16_t textBoxX = 0;
     int16_t textBoxY = 0;
-    // uint16_t tbw, tbh;
     uint16_t textBoxWidth = 0;;
     uint16_t textBoxHeight = 0;
     display.getTextBounds(text, 0, 0, &textBoxX, &textBoxY, &textBoxWidth, &textBoxHeight);
@@ -739,18 +720,10 @@ void startScreen(void){
     display.drawRect(display.getCursorX(), EINK_LINE_2 + 4, textBoxWidth + 4, 2, GxEPD_BLACK);
     display.print(textBuffer);
 
-    // display.print(hours);
-    // display.print("h");
-    // display.print(minutes);
-    // display.print("m");
-
     display.setCursor(0, EINK_LINE_3);
     display.print("Target:");
     display.print(DEFAULT_TARGET_TEMPERATURE_ELEMENT, 1);
     printDegreeSymbol();
-    // display.setCursor(0, EINK_LINE_3);
-    // display.print("DEBUG: ");
-    // display.print(millis());
 
     display.setCursor(0, EINK_LINE_4);
     display.print("Press To Start");
@@ -791,8 +764,6 @@ void setDisplayBuffer(int16_t displayScreen){
     last_displayed_screen = displayScreen;
 
     display.drawRect(0, EINK_LINE_0 + 4, display.width(), 2, GxEPD_BLACK);
-    // display.drawRect(int16_t x, int16_t y, int16_t w, int16_t h, uint16_t color)
-    // display.drawRBox(x, y, display.width(), 2, 0);
 
     switch(displayScreen){
         case MENU_SCREEN_STATUS:{
@@ -833,11 +804,6 @@ void setDisplayBuffer(int16_t displayScreen){
             else{
                 display.print("N/A");
             }
-            
-            // display.setCursor(0, EINK_LINE_3);
-            // display.print("Limit:");
-            // display.print(MAX_POWER_LIMIT, 1); 
-            // display.print("W");
 
             float mt = last_displayed_timer;
             uint16_t hours = (uint16_t)(mt / 60);
@@ -856,10 +822,6 @@ void setDisplayBuffer(int16_t displayScreen){
                 display.drawRect(display.getCursorX(), EINK_LINE_1 + 4, textBoxWidth + 4, 2, GxEPD_BLACK);
             }
             display.print(textBuffer1);
-            // display.print(hours);
-            // display.print("h");
-            // display.print(minutes);
-            // display.print("m");
             break;
         }
         case MENU_SCREEN_START:{
@@ -894,9 +856,6 @@ void setDisplayBuffer(int16_t displayScreen){
             errorScreen("Not Reaching Target Temp");
             break;
         }
-        // default:{
-        //     return;
-        // }
     }
     lastScreenDisplayed = displayScreen;
 }
@@ -922,10 +881,6 @@ void einkInit(void){
     display.setFullWindow();
     display.firstPage();
     display.fillScreen(GxEPD_WHITE);
-
-    // splashScreen(); //Display the splash screen on boot
-    // display.hibernate();
-    // delay(5000);
 }
 
 /*--------------------------------------------------------------------------------------------------------------------------------------------------------*/
@@ -991,16 +946,7 @@ void setup(){
 
         if(msTime - prevTime > 700){ //Update every 700ms. Update cycle takes ~650ms
             prevTime = msTime;
-            // displayEINK200x200PartialUpdate();
-            // setDisplayBuffer(MENU_SCREEN_START); //Force the start screen to show
-            // showDisplayBuffer();
-            if( 
-                // (last_displayed_thermistor0 != temp_steinhart_thermistor_element) ||
-                // (last_displayed_thermistor1 != temp_steinhart_thermistor_probe) ||
-                // (last_displayed_target_temp != getTargetTemperature()) ||
-                (last_displayed_timer != (int16_t)getTimeoutMinutes())// ||
-                // (last_displayed_screen != display_screen)
-                ){
+            if((last_displayed_timer != (int16_t)getTimeoutMinutes())){
                 require_screen_update = true;
             }
 
@@ -1026,17 +972,11 @@ void loop(){
 
     if(msTime - prevTime > 700){ //Update every 700ms. Update cycle takes ~650ms
         prevTime = msTime;
-        // displayEINK200x200PartialUpdate();
         if( (last_displayed_thermistor0 != temp_steinhart_thermistor_element) ||
             (last_displayed_thermistor1 != temp_steinhart_thermistor_probe) ||
             (last_displayed_target_temp != getTargetTemperature()) ||
             (last_displayed_timer != (int16_t)getTimeoutMinutes()) ||
             (last_displayed_screen != display_screen)){
-            // Serial.printf("Lt0: %.3f\t t0: %.3f\n", last_displayed_thermistor0, temp_steinhart_thermistor_element);
-            // Serial.printf("Lt1: %.3f\t t1: %.3f\n", last_displayed_thermistor1, temp_steinhart_thermistor_probe);
-            // Serial.printf("Ltt: %.3f\t tt: %.3f\n", last_displayed_target_temp, getTargetTemperature());
-            // Serial.printf("LTime: %d\t Time: %d\n", last_displayed_timer, (int16_t)getTimeoutMinutes());
-            // Serial.printf("LS: %d\t s: %d\n", last_displayed_screen, display_screen);
 
             require_screen_update = true;
         }
