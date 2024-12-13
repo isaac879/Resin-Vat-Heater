@@ -8,5 +8,5 @@ The E-Ink display lines “RES” and “CS” are mislabelled on the control bo
 
 Make sure the element resistance is correct in the code and matches the resistance of your heating elements (Line 90: ELEMENT_RESISTANCE). 
 
-Project video: https://www.youtube.com/@isaac879
+Project video: https://youtu.be/hyjGFaW69lo
  
